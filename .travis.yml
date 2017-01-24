@@ -1,3 +1,4 @@
+# repro “for the GitHub issue”
 sudo: false
 dist: trusty
 services:
