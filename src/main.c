@@ -109,6 +109,31 @@ static void xcb_got_event(EV_P_ struct ev_io *w, int revents) {
  */
 static void xcb_prepare_cb(EV_P_ ev_prepare *w, int revents) {
     xcb_flush(conn);
+
+    /* Process all queued events before the event loop sleeps */
+    xcb_generic_event_t *event;
+
+    while ((event = xcb_poll_for_queued_event(conn)) != NULL) {
+        if (event->response_type == 0) {
+            if (event_is_ignored(event->sequence, 0))
+                DLOG("Expected X11 Error received for sequence %x\n", event->sequence);
+            else {
+                xcb_generic_error_t *error = (xcb_generic_error_t *)event;
+                DLOG("X11 Error received (probably harmless)! sequence 0x%x, error_code = %d\n",
+                     error->sequence, error->error_code);
+            }
+            free(event);
+            continue;
+        }
+
+        /* Strip off the highest bit (set if the event is generated) */
+        int type = (event->response_type & 0x7F);
+
+        handle_event(type, event);
+
+        free(event);
+    }
+
 }
 
 /*
