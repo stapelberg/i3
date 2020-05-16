@@ -896,7 +896,8 @@ bool parse_file(const char *f, bool use_nagbar) {
     if (fstat(fd, &stbuf) == -1)
         die("Could not fstat file: %s\n", strerror(errno));
 
-    buf = scalloc(stbuf.st_size + 1, 1);
+    const off_t buf_size = stbuf.st_size + 1;
+    buf = scalloc(buf_size, 1);
 
     if ((fstr = fdopen(fd, "r")) == NULL)
         die("Could not fdopen: %s\n", strerror(errno));
@@ -937,7 +938,7 @@ bool parse_file(const char *f, bool use_nagbar) {
             continuation = NULL;
         }
 
-        strncpy(buf + strlen(buf), buffer, strlen(buffer) + 1);
+        strncpy(buf + strlen(buf), buffer, buf_size - strlen(buf));
 
         /* Skip comments and empty lines. */
         if (skip_line || comment) {
@@ -1031,6 +1032,7 @@ bool parse_file(const char *f, bool use_nagbar) {
      * but replace occurrences of our variables */
     char *walk = buf, *destwalk;
     char *new = scalloc(stbuf.st_size + extra_bytes + 1, 1);
+    off_t dest_rem = stbuf.st_size + extra_bytes + 1;
     destwalk = new;
     while (walk < (buf + stbuf.st_size)) {
         /* Find the next variable */
@@ -1056,9 +1058,11 @@ bool parse_file(const char *f, bool use_nagbar) {
         } else {
             /* Copy until the next variable, then copy its value */
             strncpy(destwalk, walk, distance);
-            strncpy(destwalk + distance, nearest->value, strlen(nearest->value));
+            strncpy(destwalk + distance, nearest->value, dest_rem - distance);
             walk += distance + strlen(nearest->key);
-            destwalk += distance + strlen(nearest->value);
+            const int n = distance + strlen(nearest->value);
+            destwalk += n;
+            dest_rem -= n;
         }
     }
 

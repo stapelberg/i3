@@ -304,17 +304,32 @@ int i3_send_msg(uint32_t type, const char *payload) {
      * than the pure header (why not just write() the payload from *payload?),
      * but we leave it for now */
     char *buffer = smalloc(to_write);
+    size_t rem = to_write;
     char *walk = buffer;
 
-    memcpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
-    walk += strlen(I3_IPC_MAGIC);
-    memcpy(walk, &len, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
-    memcpy(walk, &type, sizeof(uint32_t));
-    walk += sizeof(uint32_t);
+    {
+        memcpy(buffer, I3_IPC_MAGIC, strlen(I3_IPC_MAGIC));
+        const int n = strlen(I3_IPC_MAGIC);
+        walk += n;
+        rem -= n;
+    }
+
+    {
+        memcpy(walk, &len, sizeof(uint32_t));
+        const int n = sizeof(uint32_t);
+        walk += n;
+        rem -= n;
+    }
+
+    {
+        memcpy(walk, &type, sizeof(uint32_t));
+        const int n = sizeof(uint32_t);
+        walk += n;
+        rem -= n;
+    }
 
     if (payload != NULL)
-        strncpy(walk, payload, len);
+        strncpy(walk, payload, rem);
 
     swrite(i3_connection->fd, buffer, to_write);
 

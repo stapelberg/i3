@@ -165,10 +165,10 @@ static void finish_input(void) {
 
     /* allocate space for the output */
     int inputlen = strlen(command);
-    char *full = scalloc(strlen(format) - (2 * cnt) /* format without all %s */
-                             + (inputlen * cnt)     /* replaced %s */
-                             + 1,                   /* trailing NUL */
-                         1);
+    int dest_rem = strlen(format) - (2 * cnt) /* format without all %s */
+                   + (inputlen * cnt)         /* replaced %s */
+                   + 1;                       /* trailing NUL */
+    char *full = scalloc(dest_rem, 1);
     char *dest = full;
     for (c = 0; c < len; c++) {
         /* if this is not % or it is % but without a following 's',
@@ -176,8 +176,9 @@ static void finish_input(void) {
         if (format[c] != '%' || (c == (len - 1)) || format[c + 1] != 's')
             *(dest++) = format[c];
         else {
-            strncat(dest, command, inputlen);
+            strncat(dest, command, dest_rem);
             dest += inputlen;
+            dest_rem -= inputlen;
             /* skip the following 's' of '%s' */
             c++;
         }

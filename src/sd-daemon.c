@@ -317,71 +317,8 @@ int sd_is_socket_unix(int fd, int type, int listening, const char *path, size_t 
 }
 
 int sd_notify(int unset_environment, const char *state) {
-#if defined(DISABLE_SYSTEMD) || !defined(__linux__) || !defined(SOCK_CLOEXEC)
+    // (Unused) code removed to avoid having to deal with compiler warnings.
     return 0;
-#else
-    int fd = -1, r;
-    struct msghdr msghdr;
-    struct iovec iovec;
-    union sockaddr_union sockaddr;
-    const char *e;
-
-    if (!state) {
-        r = -EINVAL;
-        goto finish;
-    }
-
-    if (!(e = getenv("NOTIFY_SOCKET")))
-        return 0;
-
-    /* Must be an abstract socket, or an absolute path */
-    if ((e[0] != '@' && e[0] != '/') || e[1] == 0) {
-        r = -EINVAL;
-        goto finish;
-    }
-
-    if ((fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0)) < 0) {
-        r = -errno;
-        goto finish;
-    }
-
-    memset(&sockaddr, 0, sizeof(sockaddr));
-    sockaddr.sa.sa_family = AF_UNIX;
-    strncpy(sockaddr.un.sun_path, e, sizeof(sockaddr.un.sun_path));
-
-    if (sockaddr.un.sun_path[0] == '@')
-        sockaddr.un.sun_path[0] = 0;
-
-    memset(&iovec, 0, sizeof(iovec));
-    iovec.iov_base = (char *)state;
-    iovec.iov_len = strlen(state);
-
-    memset(&msghdr, 0, sizeof(msghdr));
-    msghdr.msg_name = &sockaddr;
-    msghdr.msg_namelen = offsetof(struct sockaddr_un, sun_path) + strlen(e);
-
-    if (msghdr.msg_namelen > sizeof(struct sockaddr_un))
-        msghdr.msg_namelen = sizeof(struct sockaddr_un);
-
-    msghdr.msg_iov = &iovec;
-    msghdr.msg_iovlen = 1;
-
-    if (sendmsg(fd, &msghdr, MSG_NOSIGNAL) < 0) {
-        r = -errno;
-        goto finish;
-    }
-
-    r = 1;
-
-finish:
-    if (unset_environment)
-        unsetenv("NOTIFY_SOCKET");
-
-    if (fd >= 0)
-        close(fd);
-
-    return r;
-#endif
 }
 
 int sd_notifyf(int unset_environment, const char *format, ...) {

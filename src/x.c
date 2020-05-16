@@ -680,7 +680,7 @@ void x_draw_decoration(Con *con) {
         goto copy_pixmaps;
     }
 
-    int title_offset_x;
+    int title_offset_x = 0;
     switch (config.title_align) {
         case ALIGN_LEFT:
             /* (pad)[text    ](pad)[mark + its pad) */

@@ -25,7 +25,7 @@ static bool tiling_resize_for_border(Con *con, border_t border, xcb_button_press
     DLOG("border = %d, con = %p\n", border, con);
     Con *second = NULL;
     Con *first = con;
-    direction_t search_direction;
+    direction_t search_direction = D_LEFT;
     switch (border) {
         case BORDER_LEFT:
             search_direction = D_LEFT;
