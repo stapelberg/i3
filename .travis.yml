@@ -24,25 +24,9 @@ env:
   - secure: "sBMVn4C/WRWgoAytEFGx4CC5O55Q63h02AcuBnb1jXcBm0RenoBpzUPtxSseJwDPUA1o/UkuEDDjm3PosT5NF+dvED01VDFMsPVE11K0u6+avYy3jYXqyUEDW3G2o6Wo/2aqNjmd++8jskBdS9+Cx9gaFbgxfzSp0Yfu3oJm/4c=" # GH_TOKEN
 install:
   - if [ -a .git/shallow ]; then git fetch --unshallow; fi
-  - docker pull ${BASENAME} || ./travis/docker-build-and-push.sh ${BASENAME} travis/travis-base.Dockerfile
-  - ./travis/skip-pkg.sh || docker pull ${BASENAME_UBUNTU} || ./travis/docker-build-and-push.sh ${BASENAME_UBUNTU} travis/travis-base-ubuntu.Dockerfile
-  - ./travis/skip-pkg.sh || docker pull ${BASENAME_386} || ./travis/docker-build-and-push.sh ${BASENAME_386} travis/travis-base-386.Dockerfile
-  - ./travis/skip-pkg.sh || docker pull ${BASENAME_UBUNTU_386} || ./travis/docker-build-and-push.sh ${BASENAME_UBUNTU_386} travis/travis-base-ubuntu-386.Dockerfile
+
 script:
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-safe-wrappers.sh
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-formatting.sh
-  # autoconf build has to keep working until i3 4.19 is released,
-  # so we keep building it in travis.
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${BASENAME} /bin/sh -c 'autoreconf -fi && mkdir -p build && cd build && (../configure || (cat config.log; false)) && make -j CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common"'
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${BASENAME} /bin/sh -c 'rm -rf build; mkdir -p build && cd build && CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common" meson .. -Ddocs=true -Dmans=true -Db_sanitize=address && ninja -v'
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/check-spelling.pl
-  - docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC ${BASENAME} ./travis/run-tests.sh
-  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/debian-build.sh deb/debian-amd64/DIST
-  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_UBUNTU} ./travis/debian-build.sh deb/ubuntu-amd64/DIST
-  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_386} linux32 ./travis/debian-build.sh deb/debian-i386/DIST
-  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME_UBUNTU_386} linux32 ./travis/debian-build.sh deb/ubuntu-i386/DIST
-  - ./travis/skip-pkg.sh || docker run -v $PWD:/usr/src/i3/ -w /usr/src/i3 ${BASENAME} ./travis/docs.sh
-  - ./travis/skip-pkg.sh || travis/prep-bintray.sh
+  - docker run --privileged --entrypoint /entrypoint -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC distr1/distri:supersilverhaze /bin/sh -c 'mkdir /lib64 && ln -s /ro/glibc-amd64-2.31-4/out/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 && distri install asciidoc xmlto meson gcc binutils startup-notification xcb-util-cursor xcb-util-keysyms xcb-util-xrm xcb-util-wm libxkbcommon yajl2 pcre pango fribidi harfbuzz libx11 fontconfig libev libxcb perl make && (rm -rf build; mkdir -p build && cd build && (CFLAGS="-Wformat -Wformat-security -Wextra -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Werror -fno-common" meson .. -Ddocs=true -Dmans=false -Db_sanitize=address) && ninja -v)'
 
 deploy:
   - provider: bintray
