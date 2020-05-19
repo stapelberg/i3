@@ -1,0 +1,15 @@
+name: main
+
+on:
+  push:
+    branches: [ 'distri-exp' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'do a build'
+      run: 'docker run --privileged --entrypoint /entrypoint -v $PWD:/usr/src/i3/ -w /usr/src/i3 -e CC distr1/distri:supersilverhaze /bin/sh -x ./travis/distri.sh'
