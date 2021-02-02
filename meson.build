@@ -77,53 +77,52 @@ if docdir == ''
 endif
 
 if get_option('docs')
-  asciidoc = find_program('asciidoc')
-  doc_toc_inputs = [
-    'docs/hacking-howto',
-    'docs/userguide',
-    'docs/ipc',
-    'docs/multi-monitor',
-    'docs/wsbar',
-    'docs/testsuite',
-    'docs/i3bar-protocol',
-    'docs/layout-saving',
+  go = find_program('go')
+  cmd = 'cd @0@/tl8/cmd/tl8-render && go build -o @1@/@OUTPUT@'.format(meson.current_source_dir(), meson.current_build_dir())
+  tl8render = custom_target(
+    'tl8-render',
+    build_by_default: true,
+    command: ['sh', '-c', cmd],
+    input: files(
+      'tl8/cmd/tl8-render/tl8render.go',
+    ),
+    output: 'tl8-render',
+    )
+  doc_inputs = [
+#    'docs/debugging',
+#    'docs/hacking-howto',
+    'docs/userguide.markdown',
+#    'docs/ipc',
+#    'docs/multi-monitor',
+#    'docs/wsbar',
+#    'docs/testsuite',
+#    'docs/i3bar-protocol',
+#    'docs/layout-saving',
   ]
-  foreach m : doc_toc_inputs
+  foreach m : doc_inputs
+    basename = run_command(['basename', m, '.markdown']).stdout().strip()
     custom_target(
-      m.underscorify()+'_asciidoc',
-      input: m,
-      output: '@BASENAME@.html',
-      command: [
-        asciidoc,
-        '-a', 'toc',
-        '-n',
-        '-o', '@OUTPUT@',
-        '@INPUT@',
+      m.underscorify()+'_render',
+      input: [
+	m,
+	'docs/header.html.tmpl',
+	'docs/footer.html.tmpl',
       ],
+      output: basename + '.html',
+      command: [
+	# TODO: file meson bug: just specifying tl8render here does not work
+	tl8render.full_path(),
+	'--outdir=@0@'.format(meson.current_build_dir()),
+	'--header_template=@INPUT1@',
+	'--footer_template=@INPUT2@',
+	# TODO: specify all documents on one command line for fewer processes
+	'@INPUT0@',
+      ],
+      depends: tl8render,
       install: true,
       install_dir: docdir,
     )
   endforeach
-
-  doc_notoc_inputs = [
-    'docs/debugging',
-  ]
-  foreach m : doc_notoc_inputs
-    custom_target(
-      m.underscorify()+'_asciidoc',
-      input: m,
-      output: '@BASENAME@.html',
-      command: [
-        asciidoc,
-        '-n',
-        '-o', '@OUTPUT@',
-        '@INPUT@',
-      ],
-      install: true,
-      install_dir: docdir,
-    )
-  endforeach
-
 else
   if run_command('[', '-f', 'docs/hacking-howto.html', ']').returncode() == 0
     install_data(
