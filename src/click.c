@@ -227,8 +227,11 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
         return;
     }
 
+    Con *fs = con_get_fullscreen_covering_ws(ws);
+    const bool not_fullscreen = fs != con;
+
     /* 2: floating modifier pressed, initiate a drag */
-    if (mod_pressed && event->detail == XCB_BUTTON_INDEX_1 && !floatingcon) {
+    if (is_left_click && not_fullscreen && mod_pressed && !floatingcon) {
         tiling_drag(con, event);
         allow_replay_pointer(event->time);
         return;
@@ -254,8 +257,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
 
     /* 4: For floating containers, we also want to raise them on click.
      * We will skip handling events on floating cons in fullscreen mode */
-    Con *fs = con_get_fullscreen_covering_ws(ws);
-    if (floatingcon != NULL && fs != con) {
+    if (floatingcon != NULL && not_fullscreen) {
         /* 5: floating_modifier plus left mouse button drags */
         if (mod_pressed && is_left_click) {
             floating_drag_window(floatingcon, event, false);
@@ -305,7 +307,7 @@ static void route_click(Con *con, xcb_button_press_event_t *event, const bool mo
     }
 
     /* 8: floating modifier pressed, initiate a drag */
-    if ((mod_pressed || dest == CLICK_DECORATION) && event->detail == XCB_BUTTON_INDEX_1) {
+    if (is_left_click && not_fullscreen && (mod_pressed || dest == CLICK_DECORATION)) {
         allow_replay_pointer(event->time);
         tiling_drag(con, event);
         return;
